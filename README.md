@@ -4,7 +4,7 @@ This repository contains web crawler scripts developed for the B9122 course. The
 
 ## Author
 
-**Your Name**  
+**Sonny Song**  
 - **GitHub**: [@sonnysong1204](https://github.com/sonnysong1204)
 - **Email**: sonnysong1204@gmail.com
 

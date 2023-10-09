@@ -5,8 +5,10 @@ containing the word "crisis".
 import os
 
 # Change the current working directory to the directory where the script is located
-script_directory = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_directory)
+# Otherwise, the txt files might be saved somewhere else
+saving_directory = os.path.dirname(os.path.abspath(__file__))
+os.chdir(saving_directory)
+
 
 from bs4 import BeautifulSoup
 import urllib.request
@@ -25,9 +27,9 @@ while len(urls) > 0 and press_releases_found < 10:
         response = urllib.request.urlopen(req)
         content_type = response.headers.get('Content-Type')
         
-        # If the content type is not HTML, skip this URL and print a message
+        # If the content type is not rendered using HTML, skip this URL and print a message
         if 'html' not in content_type:
-            print(f"Oops, we encountered a web page that is not using HTML at {curr_url}. Skipping...")
+            print(f"Oops, we encountered a web page that is not rendered using HTML at {curr_url}. Skipping...")
             continue
 
         webpage = response.read()
@@ -39,6 +41,7 @@ while len(urls) > 0 and press_releases_found < 10:
             # Check if the press release contains the word "crisis"
             if "crisis" in soup.get_text().lower():
                 press_releases_found += 1
+                print(f"Saving content from URL: {curr_url}") 
                 # Save the HTML source to a .txt file
                 with open(f"1_{press_releases_found}.txt", "w", encoding="utf-8") as file:
                     file.write(str(soup))
@@ -46,10 +49,11 @@ while len(urls) > 0 and press_releases_found < 10:
         # Add new URLs to the queue
         for tag in soup.find_all('a', href=True):
             child_url = tag['href']
-            absolute_url = urllib.parse.urljoin(seed_url, child_url)
-            if seed_url in absolute_url and absolute_url not in seen:
-                urls.append(absolute_url)
-                seen.append(absolute_url)
+            full_url = urllib.parse.urljoin(seed_url, child_url)
+            # Whenever a new URL is encountered, the code checks whether it contains seed url and is already in the seen list
+            if seed_url in full_url and full_url not in seen:
+                urls.append(full_url)
+                seen.append(full_url)
 
     except Exception as ex:
         print(f"Error accessing {curr_url}: {ex}")

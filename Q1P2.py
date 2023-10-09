@@ -6,8 +6,9 @@ releases that cover the plenary sessions and contain the word "crisis".
 import os
 
 # Change the current working directory to the directory where the script is located
-script_directory = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_directory)
+# Otherwise, the txt files might be saved somewhere else
+saving_directory = os.path.dirname(os.path.abspath(__file__))
+os.chdir(saving_directory)
 
 from bs4 import BeautifulSoup
 import urllib.request
@@ -27,9 +28,9 @@ while len(urls) > 0 and press_releases_found < 10:
         response = urllib.request.urlopen(req)
         content_type = response.headers.get('Content-Type')
         
-        # If the content type is not HTML, skip this URL and print a message
+        # If the content type is not rendered using HTML, skip this URL and print a message
         if 'html' not in content_type:
-            print(f"Oops, we encountered a web page that is not using HTML at {curr_url}. Skipping...")
+            print(f"Oops, we encountered a web page that is not rendered using HTML at {curr_url}. Skipping...")
             continue
 
         webpage = response.read()
@@ -39,8 +40,10 @@ while len(urls) > 0 and press_releases_found < 10:
         plenary_session_tag = soup.find('span', {'class': 'ep_name'}, string="Plenary session")
         if plenary_session_tag:
             # Check if the press release contains the word "crisis"
-            if "crisis" in soup.get_text().lower():
+            # Avoids accessing contentType or keywordValue pages that satisfy the requirement but is not an actual article page
+            if "crisis" in soup.get_text().lower() and not ("contentType" in curr_url or "keywordValue" in curr_url):
                 press_releases_found += 1
+                print(f"Saving content from URL: {curr_url}")
                 # Save the HTML source to a .txt file
                 with open(f"2_{press_releases_found}.txt", "w", encoding="utf-8") as file:
                     file.write(str(soup))
@@ -48,12 +51,13 @@ while len(urls) > 0 and press_releases_found < 10:
         # Add new URLs to the queue
         for tag in soup.find_all('a', href=True):
             child_url = tag['href']
-            absolute_url = urllib.parse.urljoin(seed_url, child_url)
+            full_url = urllib.parse.urljoin(seed_url, child_url)
             # startswith is used to suppress the crawler from accessing social media links inside the pages
-            # without this, the crawler will try to access Twitter links, which is not what we want 
-            if absolute_url.startswith(seed_url) and absolute_url not in seen:
-                urls.append(absolute_url)
-                seen.append(absolute_url)
+            # without this, the crawler will try to access Twitter and other social media links embedded, which is not what we want 
+            # Whenever a new URL is encountered, the code checks whether it is already in the seen list
+            if full_url.startswith(seed_url) and full_url not in seen:
+                urls.append(full_url)
+                seen.append(full_url)
 
     except Exception as ex:
         print(f"Error accessing {curr_url}: {ex}")
